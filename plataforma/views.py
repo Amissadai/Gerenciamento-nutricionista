@@ -1,7 +1,6 @@
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Pacientes
+from .models import DadosPaciente, Pacientes
 from django.contrib import messages
 from django.contrib.messages import constants
 
@@ -52,6 +51,53 @@ def pacientes(request):
 def dados_paciente_listar(request):
     if request.method == "GET":
         pacientes = Pacientes.objects.filter(nutri=request.user)
-        return render(request, 'dados_paciente.html', {'pacientes':pacientes})
+        return render(request, 'dados_paciente_listar.html', {'pacientes':pacientes})
+
+
+@login_required(login_url='/auth/login/')
+def dados_paciente(request, id):
+    paciente = get_object_or_404(Pacientes, id=id)
+    if not paciente.nutri == request.user:
+        messages.add_message(request, constants.ERROR, 'Esse paciente não é seu')
+        return redirect('/dados_paciente/')
+
+    if request.method == "GET":
+        dados_paciente = DadosPaciente.objects.filter(pacientes=paciente)
+        return render(request, 'dados_pacientes.html', {'paciente':paciente,'dados_paciente':dados_paciente})
+    elif request.method == "POST":
+        peso = request.POST.get('peso')
+        altura = request.POST.get('altura')
+        gordura = request.POST.get('gordura')
+        musculo = request.POST.get('musculo')
+
+        hdl = request.POST.get('hdl')
+        ldl = request.POST.get('ldl')
+        colesterol_total = request.POST.get('ctotal')
+        triglicerídios = request.POST.get('triglicerídios')
+
+        if len(peso.strip()) == 0 or len(altura.strip()) == 0 or len(gordura.strip()) == 0 or len(musculo.strip()) == 0:
+            messages.add_message(request, constants.ERROR, 'Campos não podem ficar em branco')
+            return redirect('/dados_paciente/')
+        
+        if len(hdl.strip()) == 0 or len(ldl.strip()) == 0 or len(colesterol_total.strip()) == 0 or len(triglicerídios.strip()) == 0:
+            messages.add_message(request, constants.ERROR, 'Campos não podem ficar em branco')
+            return redirect('/dados_paciente/')
+
+        try:
+            p1 = DadosPaciente(pacientes = paciente,
+                                        peso = peso,
+                                        altura = altura,
+                                        percentual_gordura = gordura,
+                                        percentual_musculo = musculo,
+                                        colesterol_hdl = hdl,
+                                        colesterol_ldl = ldl,
+                                        colesterol_total = colesterol_total,
+                                        trigliceridios = triglicerídios)
+            p1.save()
+            messages.add_message(request, constants.SUCCESS, 'Dados cadastrado com sucesso')
+            return redirect('/dados_paciente/')
+        except:
+            messages.add_message(request, constants.ERROR, 'Erro interno do sistema')
+            return redirect('/dados_paciente/')
 
 

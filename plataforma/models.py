@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-from datetime import datetime
 
 class Pacientes(models.Model):
     choices_sexo = (('F', 'Feminino'),
@@ -18,7 +17,6 @@ class Pacientes(models.Model):
 
 class DadosPaciente(models.Model):
     pacientes = models.ForeignKey(Pacientes, on_delete=models.CASCADE)
-    data = datetime.now()
     peso = models.IntegerField()
     altura = models.IntegerField()
     percentual_gordura = models.IntegerField()
